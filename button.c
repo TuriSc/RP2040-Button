@@ -1,17 +1,21 @@
-#ifndef PICO_BUTTON_C
-#define PICO_BUTTON_C
+/*
+* RP2040-Button
+* Button debounce library for Raspberry Pi Pico
+*
+* Fork of https://github.com/jkroso/pico-button.c
+* including https://github.com/jkroso/pico-gpio-interrupt.c,
+* both by Jake Rosoman. MIT license.
+*
+* 2023-02-13: Adapted by Turi Scandurra
+*/
 
-#include "pico/stdlib.h"
-#include <stdint.h>
-#include <stdlib.h>
 #include <stdio.h>
-#include "pico-gpio-interrupt/gpio-interrupt.c"
+#include <stdint.h>
+#include "pico/stdlib.h"
 
-typedef struct button_t {
-  uint8_t pin;
-  bool state;
-  void (*onchange)(struct button_t *button);
-} button_t;
+#include "button.h"
+
+closure_t handlers[28] = {NULL};
 
 long long int handle_button_alarm(long int a, void *p) {
   button_t *b = (button_t *)(p);
@@ -29,7 +33,22 @@ void handle_button_interrupt(void *p) {
   add_alarm_in_us(200, handle_button_alarm, b, true);
 }
 
+void handle_interrupt(uint gpio, uint32_t events) {
+  closure_t handler = handlers[gpio];
+  handler.fn(handler.argument);
+}
+
+void listen(uint pin, int condition, handler fn, void *arg) {
+  gpio_set_irq_enabled_with_callback(pin, condition, true, handle_interrupt);
+  closure_t *handler = malloc(sizeof(closure_t));
+  handler->argument = arg;
+  handler->fn = fn;
+  handlers[pin] = *handler;
+}
+
 button_t * create_button(int pin, void (*onchange)(button_t *)) {
+  gpio_init(pin);
+  gpio_pull_up(pin);
   button_t *b = (button_t *)(malloc(sizeof(button_t)));
   listen(pin, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, handle_button_interrupt, b);
   b->pin = pin;
@@ -37,5 +56,3 @@ button_t * create_button(int pin, void (*onchange)(button_t *)) {
   b->state = gpio_get(pin);
   return b;
 }
-
-#endif
