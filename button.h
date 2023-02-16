@@ -14,6 +14,8 @@
 
 #include "pico/stdlib.h"
 
+#define DEBOUNCE_US 200
+
 typedef struct button_t {
   uint8_t pin;
   bool state;
