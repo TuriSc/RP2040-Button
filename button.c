@@ -17,8 +17,7 @@
 #include "button.h"
 
 closure_t handlers[28] = {NULL};
-
-alarm_id_t reset_alarm_id;
+alarm_id_t alarm_ids[28];
 
 long long int handle_button_alarm(long int a, void *p) {
   button_t *b = (button_t *)(p);
@@ -32,9 +31,8 @@ long long int handle_button_alarm(long int a, void *p) {
 
 void handle_button_interrupt(void *p) {
   button_t *b = (button_t *)(p);
-  bool state = gpio_get(b->pin);
-  if (reset_alarm_id) cancel_alarm(reset_alarm_id);
-  reset_alarm_id = add_alarm_in_us(DEBOUNCE_US, handle_button_alarm, b, true);
+  if (alarm_ids[b->pin]) cancel_alarm(alarm_ids[b->pin]);
+  alarm_ids[b->pin] = add_alarm_in_us(DEBOUNCE_US, handle_button_alarm, b, true);
 }
 
 void handle_interrupt(uint gpio, uint32_t events) {
