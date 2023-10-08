@@ -14,6 +14,10 @@
 
 #include "pico/stdlib.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define DEBOUNCE_US 200
 
 typedef struct button_t {
@@ -38,5 +42,9 @@ void handle_interrupt(uint gpio, uint32_t events);
 void listen(uint pin, int condition, handler fn, void *arg);
 
 button_t * create_button(int pin, void (*onchange)(button_t *));
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
