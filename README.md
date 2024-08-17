@@ -1,5 +1,5 @@
-# RP2040 Button
-## Button debounce library for Raspberry Pi Pico
+# Raspberry Pi Pico Button
+## Button debounce library for Raspberry Pi Pico (RP2040 and RP2350)
 
 A C library to define and debounce push buttons on a Raspberry Pi Pico.
 It generates interrupts after listening to GPIO_IRQ events.
