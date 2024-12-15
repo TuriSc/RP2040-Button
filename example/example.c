@@ -1,9 +1,28 @@
+/**
+ * @file example/example.c
+ * @brief Example usage of the button debounce library
+ */
+
 #include "pico/stdlib.h"
 #include <stdio.h>
-#include <button.h>
-#define PLAY_BUTTON 16  // Button on GPIO 16
-#define PAUSE_BUTTON 17  // Button on GPIO 17
+#include "button.h"
 
+/**
+ * @def PLAY_BUTTON
+ * @brief The GPIO pin number of the play button
+ */
+#define PLAY_BUTTON 16
+
+/**
+ * @def PAUSE_BUTTON
+ * @brief The GPIO pin number of the pause button
+ */
+#define PAUSE_BUTTON 17
+
+/**
+ * @brief Callback function for button state changes
+ * @param button_p The button structure
+ */
 void onchange(button_t *button_p) {
   button_t *button = (button_t*)button_p;
   printf("Button on pin %d changed its state to %d\n", button->pin, button->state);
@@ -21,6 +40,10 @@ void onchange(button_t *button_p) {
   }
 }
 
+/**
+ * @brief Main function
+ * @return 0
+ */
 int main() {
   stdio_init_all();
   button_t *play_button = create_button(PLAY_BUTTON, onchange);
