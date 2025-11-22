@@ -28,6 +28,12 @@ extern "C" {
 #define DEBOUNCE_US 200
 
 /**
+ * @def MAX_BUTTON_EVENTS
+ * @brief Maximum number of button events that can be queued
+ */
+#define MAX_BUTTON_EVENTS 16
+
+/**
  * @struct button_t
  * @brief Represents a button with its pin, state, and onchange callback
  */
@@ -73,6 +79,23 @@ typedef struct {
 } closure_t;
 
 /**
+ * @struct button_event_t
+ * @brief Represents a button event in the queue
+ */
+typedef struct {
+  /**
+   * @var button
+   * @brief Pointer to the button that generated the event
+   */
+  button_t *button;
+  /**
+   * @var state
+   * @brief The new state of the button
+   */
+  bool state;
+} button_event_t;
+
+/**
  * @brief Handles a button alarm
  * @param a The alarm ID (not used)
  * @param p The button structure
@@ -103,12 +126,29 @@ void handle_interrupt(uint gpio, uint32_t events);
 void listen(uint pin, int condition, handler fn, void *arg);
 
 /**
+ * @brief Initialize the button system (call before creating buttons)
+ */
+void button_system_init(void);
+
+/**
  * @brief Creates a new button structure
  * @param pin The GPIO pin number
  * @param onchange The onchange callback function
- * @return The new button structure
+ * @return The new button structure, or NULL on failure
  */
 button_t * create_button(int pin, void (*onchange)(button_t *));
+
+/**
+ * @brief Poll for button events and process callbacks (call from main loop)
+ * @return Number of events processed
+ */
+int button_poll_events(void);
+
+/**
+ * @brief Destroy a button and free its resources
+ * @param button Pointer to the button to destroy
+ */
+void button_destroy(button_t *button);
 
 #ifdef __cplusplus
 }
