@@ -94,7 +94,11 @@ long long int handle_button_alarm(long int a, void *p) {
  * @param p The button structure
  */
 void handle_button_interrupt(void *p) {
+  if (!p) return;
+  
   button_t *b = (button_t *)(p);
+  if (!b || b->pin >= 28) return;
+  
   if (alarm_ids[b->pin]) cancel_alarm(alarm_ids[b->pin]);
   alarm_ids[b->pin] = add_alarm_in_us(DEBOUNCE_US, handle_button_alarm, b, true);
 }

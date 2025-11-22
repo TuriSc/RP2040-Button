@@ -46,9 +46,18 @@ void onchange(button_t *button_p) {
  */
 int main() {
   stdio_init_all();
+  
+  // Initialize button system
+  button_system_init();
+  
   button_t *play_button = create_button(PLAY_BUTTON, onchange);
   button_t *pause_button = create_button(PAUSE_BUTTON, onchange);
 
-  while (true) tight_loop_contents();
+  while (true) {
+    // Process button events so that callbacks run in main loop context, not interrupt context
+    button_poll_events();
+    // Throttle loop to reduce CPU usage, adjust as needed
+    sleep_ms(10);
+  }
   return 0;
 }
