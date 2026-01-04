@@ -1,6 +1,10 @@
 /**
  * @file example/example.c
  * @brief Example usage of the button debounce library
+ *
+ * This example demonstrates both callback modes:
+ * - PLAY_BUTTON uses immediate mode (no polling required)
+ * - PAUSE_BUTTON uses queued mode (requires button_poll_events())
  */
 
 #include "pico/stdlib.h"
@@ -9,34 +13,38 @@
 
 /**
  * @def PLAY_BUTTON
- * @brief The GPIO pin number of the play button
+ * @brief The GPIO pin number of the play button (immediate mode)
  */
 #define PLAY_BUTTON 16
 
 /**
  * @def PAUSE_BUTTON
- * @brief The GPIO pin number of the pause button
+ * @brief The GPIO pin number of the pause button (queued mode)
  */
 #define PAUSE_BUTTON 17
 
 /**
- * @brief Callback function for button state changes
- * @param button_p The button structure
+ * @brief Simple callback for immediate mode button
+ * @param button The button structure
+ * @note This runs in interrupt context - keep it fast and simple!
  */
-void onchange(button_t *button_p) {
-  button_t *button = (button_t*)button_p;
-  printf("Button on pin %d changed its state to %d\n", button->pin, button->state);
+void play_callback(button_t *button) {
+  // Simple, fast operation safe for interrupt context
+  if(!button->state) { // Button pressed (using pullup)
+    printf("Play\n");
+  }
+}
 
-  if(button->state) return; // Ignore button release. Invert the logic if using
-                            // a pullup (internal or external).
-
-  switch(button->pin){
-    case PLAY_BUTTON:
-        printf("Play\n");
-    break;
-    case PAUSE_BUTTON:
-        printf("Pause\n");
-    break;
+/**
+ * @brief Complex callback for queued mode button
+ * @param button The button structure
+ * @note This runs in main loop context - safe to use delays, I/O, etc.
+ */
+void pause_callback(button_t *button) {
+  // Can safely use blocking operations in queued mode
+  if(!button->state) { // Button pressed (using pullup)
+    printf("Pause\n");
+    sleep_ms(10); // This is safe in queued mode
   }
 }
 
@@ -46,18 +54,22 @@ void onchange(button_t *button_p) {
  */
 int main() {
   stdio_init_all();
-  
+
   // Initialize button system
   button_system_init();
-  
-  button_t *play_button = create_button(PLAY_BUTTON, onchange);
-  button_t *pause_button = create_button(PAUSE_BUTTON, onchange);
+
+  // Create button with immediate callback (no polling needed)
+  button_t *play_button = create_button(PLAY_BUTTON, play_callback);
+
+  // Create button with queued callback (requires polling)
+  button_t *pause_button = create_button_queued(PAUSE_BUTTON, pause_callback);
 
   while (true) {
-    // Process button events so that callbacks run in main loop context, not interrupt context
+    // Process queued button events (only needed for create_button_queued)
     button_poll_events();
-    // Throttle loop to reduce CPU usage, adjust as needed
-    sleep_ms(10);
+
+    // If no polling is needed, just spin a busy‑wait loop:
+    // tight_loop_contents();
   }
   return 0;
 }

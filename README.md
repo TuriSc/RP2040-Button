@@ -9,21 +9,78 @@ Fork of [jkroso/pico-button.c](https://github.com/jkroso/pico-button.c) includin
 
 ## Usage
 
-See included example.
+This library supports two callback execution modes:
 
-## Important Notes
+### Immediate Mode (Default)
 
-- **Event Queue Pattern**: User callbacks are executed in the main loop context, not interrupt context. This prevents crashes from blocking operations or unsafe functions in callbacks.
-- **Polling Required**: You **must** call `button_poll_events()` regularly in your main loop to process queued events and invoke callbacks.
+Use `create_button()` for immediate callback execution. Callbacks run directly in the alarm interrupt context. No polling required.
 
-## Breaking Changes
+```c
+#include "button.h"
 
-**Version Update**: As of this version, you **must** call `button_poll_events()` in your main loop for button callbacks to execute. Previous versions may have appeared to work without polling, but callbacks would not actually be invoked.
+void onchange(button_t *button) {
+  // Handle button state change
+  // Keep this fast and avoid blocking operations
+  printf("Button on pin %d is now %s\n", button->pin, button->state ? "HIGH" : "LOW");
+}
 
-If you're upgrading from an older version:
-- Add `button_poll_events()` calls in your main loop
-- Replace `tight_loop_contents()` with `sleep_ms(10)` when polling events
-- See the example above for the correct usage pattern
+int main() {
+  stdio_init_all();
+  button_system_init();
+
+  button_t *my_button = create_button(15, onchange);
+
+  while (true) {
+    tight_loop_contents();
+  }
+  return 0;
+}
+```
+
+**When to use:** Simple callbacks that are interrupt-safe (no blocking, no delays, no I2C/SPI/etc).
+
+### Queued Mode
+
+Use `create_button_queued()` for safer callback execution in main loop context. Requires calling `button_poll_events()`.
+
+```c
+#include "button.h"
+
+void onchange(button_t *button) {
+  // Safe to use blocking operations, printf, I2C, SPI, delays, etc.
+  printf("Button on pin %d is now %s\n", button->pin, button->state ? "HIGH" : "LOW");
+  sleep_ms(10); // This is safe in queued mode
+}
+
+int main() {
+  stdio_init_all();
+  button_system_init();
+
+  button_t *my_button = create_button_queued(15, onchange);
+
+  while (true) {
+    button_poll_events(); // Process queued events
+    sleep_ms(10);
+  }
+  return 0;
+}
+```
+
+**When to use:** Callbacks that perform blocking operations, I/O, or need to call functions that aren't interrupt-safe.
+
+### Mixing Both Modes
+
+You can use both modes simultaneously in the same application:
+
+```c
+button_t *simple_button = create_button(14, simple_callback);       // Immediate
+button_t *complex_button = create_button_queued(15, complex_callback); // Queued
+
+while (true) {
+  button_poll_events(); // Only needed for queued buttons
+  // … rest of main loop
+}
+```
 
 ## Projects using this library
 - [Dodepan](https://github.com/TuriSc/Dodepan)
@@ -31,5 +88,6 @@ If you're upgrading from an older version:
 
 ## Version History
 
-- 2025-11-22 - Add quequed events polling to invoke callbacks outside interrupt context
+- 2026-01-04 - Add per-button callback modes (immediate and queued). Restores backwards compatibility
+- 2025-11-22 - Add queued events polling to invoke callbacks outside interrupt context
 - 2023-02-14 - Initial release

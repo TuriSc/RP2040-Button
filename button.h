@@ -49,6 +49,11 @@ typedef struct button_t {
    */
   bool state;
   /**
+   * @var use_queue
+   * @brief If true, callbacks are queued and require button_poll_events(). If false, callbacks execute immediately.
+   */
+  bool use_queue;
+  /**
    * @var onchange
    * @brief The callback function to be called when the button state changes
    */
@@ -131,12 +136,22 @@ void listen(uint pin, int condition, handler fn, void *arg);
 void button_system_init(void);
 
 /**
- * @brief Creates a new button structure
+ * @brief Creates a new button structure with immediate callback execution
  * @param pin The GPIO pin number
  * @param onchange The onchange callback function
  * @return The new button structure, or NULL on failure
+ * @note Callbacks execute immediately in alarm context (no polling required)
  */
 button_t * create_button(int pin, void (*onchange)(button_t *));
+
+/**
+ * @brief Creates a new button structure with queued callback execution
+ * @param pin The GPIO pin number
+ * @param onchange The onchange callback function
+ * @return The new button structure, or NULL on failure
+ * @note Callbacks are queued and require button_poll_events() to be called from main loop
+ */
+button_t * create_button_queued(int pin, void (*onchange)(button_t *));
 
 /**
  * @brief Poll for button events and process callbacks (call from main loop)

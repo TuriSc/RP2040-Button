@@ -80,11 +80,19 @@ static void queue_button_event(button_t *b, bool state) {
 long long int handle_button_alarm(long int a, void *p) {
   button_t *b = (button_t *)(p);
   if (!b) return 0;
-  
+
   bool state = gpio_get(b->pin);
   if (state != b->state) {
     b->state = state;
-    queue_button_event(b, state);
+    if (b->use_queue) {
+      // Queue event for later processing in main loop
+      queue_button_event(b, state);
+    } else {
+      // Execute callback immediately (backwards compatible mode)
+      if (b->onchange) {
+        b->onchange(b);
+      }
+    }
   }
   return 0;
 }
@@ -195,22 +203,44 @@ void button_destroy(button_t *button) {
 }
 
 /**
- * @brief Creates a new button structure
+ * @brief Internal helper to create a button structure
+ * @param pin The GPIO pin number
+ * @param onchange The onchange callback function
+ * @param use_queue If true, use event queue; if false, execute callbacks immediately
+ * @return The new button structure, or NULL on failure
+ */
+static button_t * create_button_internal(int pin, void (*onchange)(button_t *), bool use_queue) {
+  if (pin >= 28 || !onchange) return NULL;
+
+  gpio_init(pin);
+  gpio_pull_up(pin);
+  button_t *b = (button_t *)(malloc(sizeof(button_t)));
+  if (!b) return NULL;
+
+  listen(pin, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, handle_button_interrupt, b);
+  b->pin = pin;
+  b->onchange = onchange;
+  b->use_queue = use_queue;
+  b->state = gpio_get(pin);
+  return b;
+}
+
+/**
+ * @brief Creates a new button structure with immediate callback execution
  * @param pin The GPIO pin number
  * @param onchange The onchange callback function
  * @return The new button structure, or NULL on failure
  */
 button_t * create_button(int pin, void (*onchange)(button_t *)) {
-  if (pin >= 28 || !onchange) return NULL;
-  
-  gpio_init(pin);
-  gpio_pull_up(pin);
-  button_t *b = (button_t *)(malloc(sizeof(button_t)));
-  if (!b) return NULL;
-  
-  listen(pin, GPIO_IRQ_EDGE_RISE | GPIO_IRQ_EDGE_FALL, handle_button_interrupt, b);
-  b->pin = pin;
-  b->onchange = onchange;
-  b->state = gpio_get(pin);
-  return b;
+  return create_button_internal(pin, onchange, false);
+}
+
+/**
+ * @brief Creates a new button structure with queued callback execution
+ * @param pin The GPIO pin number
+ * @param onchange The onchange callback function
+ * @return The new button structure, or NULL on failure
+ */
+button_t * create_button_queued(int pin, void (*onchange)(button_t *)) {
+  return create_button_internal(pin, onchange, true);
 }
