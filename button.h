@@ -136,7 +136,7 @@ void listen(uint pin, int condition, handler fn, void *arg);
 void button_system_init(void);
 
 /**
- * @brief Creates a new button structure with immediate callback execution
+ * @brief Creates a new button structure with immediate callback execution, pin pulled up
  * @param pin The GPIO pin number
  * @param onchange The onchange callback function
  * @return The new button structure, or NULL on failure
@@ -145,13 +145,31 @@ void button_system_init(void);
 button_t * create_button(int pin, void (*onchange)(button_t *));
 
 /**
- * @brief Creates a new button structure with queued callback execution
+ * @brief Creates a new button structure with queued callback execution, pin pulled up
  * @param pin The GPIO pin number
  * @param onchange The onchange callback function
  * @return The new button structure, or NULL on failure
  * @note Callbacks are queued and require button_poll_events() to be called from main loop
  */
 button_t * create_button_queued(int pin, void (*onchange)(button_t *));
+
+/**
+ * @brief Creates a new button structure with immediate callback execution, pin pulled down
+ * @param pin The GPIO pin number
+ * @param onchange The onchange callback function
+ * @return The new button structure, or NULL on failure
+ * @note Callbacks execute immediately in alarm context (no polling required)
+ */
+button_t * create_button_active_high(int pin, void (*onchange)(button_t *));
+
+/**
+ * @brief Creates a new button structure with queued callback execution, pin pulled down
+ * @param pin The GPIO pin number
+ * @param onchange The onchange callback function
+ * @return The new button structure, or NULL on failure
+ * @note Callbacks are queued and require button_poll_events() to be called from main loop
+ */
+button_t * create_button_queued_active_high(int pin, void (*onchange)(button_t *));
 
 /**
  * @brief Poll for button events and process callbacks (call from main loop)

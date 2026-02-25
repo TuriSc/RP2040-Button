@@ -82,12 +82,26 @@ while (true) {
 }
 ```
 
+### Active High / active low
+
+By default the library assumes that your buttons will short the pin to the ground, and initialize them with the pin pulled up. If the buttons in your schematic use "active High" topology (so when pressed they connect the pin to a logical "high" voltage level), you need your button pin pulled down. Use these functions instead:
+
+```c
+button_t *simple_button_active_high = create_button_active_high(14, simple_callback);
+button_t *complex_button_active_high = create_button_queued_active_high(15, complex_callback);
+
+// You can mix active-high and active-low buttons in your project:
+button_t *simple_button_active_low = create_button(16, simple_callback);
+button_t *complex_button_active_low = create_button(17, simple_callback);
+```
+
 ## Projects using this library
 - [Dodepan](https://github.com/TuriSc/Dodepan)
 - [Jukephone](https://github.com/TuriSc/Jukephone)
 
 ## Version History
 
+- 2026-02-25 - Add active-high button support for buttons that pull to VCC instead of ground
 - 2026-01-04 - Add per-button callback modes (immediate and queued). Restores backwards compatibility
 - 2025-11-22 - Add queued events polling to invoke callbacks outside interrupt context
 - 2023-02-14 - Initial release

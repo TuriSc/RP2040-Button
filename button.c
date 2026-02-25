@@ -207,13 +207,17 @@ void button_destroy(button_t *button) {
  * @param pin The GPIO pin number
  * @param onchange The onchange callback function
  * @param use_queue If true, use event queue; if false, execute callbacks immediately
+ * @param active_high If true, pin is pulled down; if false, pin is pulled up
  * @return The new button structure, or NULL on failure
  */
-static button_t * create_button_internal(int pin, void (*onchange)(button_t *), bool use_queue) {
+static button_t * create_button_internal(int pin, void (*onchange)(button_t *), bool use_queue, bool active_high) {
   if (pin >= 28 || !onchange) return NULL;
 
   gpio_init(pin);
-  gpio_pull_up(pin);
+  if (active_high)
+    gpio_pull_down(pin);
+  else
+    gpio_pull_up(pin);
   button_t *b = (button_t *)(malloc(sizeof(button_t)));
   if (!b) return NULL;
 
@@ -226,21 +230,41 @@ static button_t * create_button_internal(int pin, void (*onchange)(button_t *), 
 }
 
 /**
- * @brief Creates a new button structure with immediate callback execution
+ * @brief Creates a new button structure with immediate callback execution, pin pulled up
  * @param pin The GPIO pin number
  * @param onchange The onchange callback function
  * @return The new button structure, or NULL on failure
  */
 button_t * create_button(int pin, void (*onchange)(button_t *)) {
-  return create_button_internal(pin, onchange, false);
+  return create_button_internal(pin, onchange, false, false);
 }
 
 /**
- * @brief Creates a new button structure with queued callback execution
+ * @brief Creates a new button structure with queued callback execution, pin pulled up
  * @param pin The GPIO pin number
  * @param onchange The onchange callback function
  * @return The new button structure, or NULL on failure
  */
 button_t * create_button_queued(int pin, void (*onchange)(button_t *)) {
-  return create_button_internal(pin, onchange, true);
+  return create_button_internal(pin, onchange, true, false);
+}
+
+/**
+ * @brief Creates a new button structure with immediate callback execution, pin pulled down
+ * @param pin The GPIO pin number
+ * @param onchange The onchange callback function
+ * @return The new button structure, or NULL on failure
+ */
+button_t * create_button_active_high(int pin, void (*onchange)(button_t *)) {
+  return create_button_internal(pin, onchange, false, true);
+}
+
+/**
+ * @brief Creates a new button structure with queued callback execution, pin pulled down
+ * @param pin The GPIO pin number
+ * @param onchange The onchange callback function
+ * @return The new button structure, or NULL on failure
+ */
+button_t * create_button_queued_active_high(int pin, void (*onchange)(button_t *)) {
+  return create_button_internal(pin, onchange, true, true);
 }
